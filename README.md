@@ -4,7 +4,7 @@
 1. vue2
 2. vue-router
 3. vuex
-...
+4. ...
 ## 项目进程
  - [x] 路由组件与非路由组件的搭建
  - [x] 重写replace和push方法
@@ -15,3 +15,5 @@
  - [x] 使用mockjs模拟轮播图和Floor组件数据
  - [x] 使用swiper实现轮播图并共用组件Carousel
  - [x] search模块使用vuex
+ - [x] search子组件SearchSelector动态展示数据
+ - [x] 搜索页面中面包屑处理分类、关键字、品牌信息以及平台售卖属性

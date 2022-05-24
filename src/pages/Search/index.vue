@@ -11,24 +11,28 @@
             </li>
           </ul>
           <ul class="fl sui-tag">
-            <li class="with-x">手机</li>
-            <li class="with-x">
-              iphone
-              <i>×</i>
+            <li class="with-x" v-if="searchParams.categoryName">
+              {{searchParams.categoryName}}
+              <i @click="removeCategoryName">×</i>
             </li>
-            <li class="with-x">
-              华为
-              <i>×</i>
+            <li class="with-x" v-if="searchParams.keyword">
+              {{searchParams.keyword}}
+              <i @click="removeKeyWord">×</i>
             </li>
-            <li class="with-x">
-              OPPO
-              <i>×</i>
+            <li class="with-x" v-if="searchParams.trademark">
+              {{searchParams.trademark.split(":")[1]}}
+              <i @click="removeTradeMark">×</i>
+            </li>
+            <!-- 平台上售卖属性 -->
+            <li class="with-x" v-for="(attrValue, index) in searchParams.props" :key="index">
+              {{attrValue.split(":")[1]}}
+              <i @click="removeAttr(index)">×</i>
             </li>
           </ul>
         </div>
 
         <!--selector-->
-        <SearchSelector />
+        <SearchSelector @tradeMarkInfo="tradeMarkInfo" @attrInfo="attrInfo" />
 
         <!--details-->
         <div class="details clearfix">
@@ -146,6 +150,7 @@ export default {
   },
   data() {
     return {
+      //带给服务器的参数
       searchParams: {
         category1Id: "",
         category2Id: "",
@@ -160,9 +165,10 @@ export default {
       }
     };
   },
+  //当组件挂载完毕之前调用一次
   beforeMount() {
-    
-
+    //Object.assign 合并对象(ES6)
+    Object.assign(this.searchParams, this.$route.query, this.$route.params);
   },
   mounted() {
     // this.$store.dispatch("getSearchList", {});
@@ -170,12 +176,76 @@ export default {
     this.getData();
   },
   computed: {
-    ...mapGetters(["attrsList", "goodsList", "trademarkList"])
+    ...mapGetters(["goodsList"])
   },
   methods: {
     //向服务器发送请求获取search模块，根据参数不同获取不同的数据进行展示
     getData() {
       this.$store.dispatch("getSearchList", this.searchParams);
+    },
+    //移出分类名称
+    removeCategoryName() {
+      //将分类名称置为undefined则不会将这些参数带给服务器
+      this.searchParams.categoryName = undefined;
+      this.searchParams.category1Id = undefined;
+      this.searchParams.category2Id = undefined;
+      this.searchParams.category3Id = undefined;
+      //再次发送请求
+      this.getData();
+      //地址栏也需要修改:进行路由的跳转
+      if (this.$route.params) {
+        this.$router.push({ name: "search", params: this.$route.params });
+      }
+    },
+    removeKeyWord() {
+      //将分类名称置为undefined则不会将这些参数带给服务器
+      this.searchParams.keyword = undefined;
+      //再次发送请求
+      this.getData();
+      //通知兄弟组件Header清除搜索框中的内容
+      this.$bus.$emit("clear");
+      //清楚params参数
+      if (this.$route.query) {
+        this.$router.push({ name: "search", query: this.$route.query });
+      }
+    },
+    removeTradeMark() {
+      //将品牌信息置为undefined则不会将这些参数带给服务器
+      this.searchParams.trademark = undefined;
+      //再次发送请求
+      this.getData();
+    },
+    removeAttr(index) {
+      this.searchParams.props.splice(index, 1);
+      this.getData();
+    },
+    //自定义事件的回调函数
+    tradeMarkInfo(trademark) {
+      // 整理品牌参数
+      this.searchParams.trademark = `${trademark.tmId}:${trademark.tmName}`;
+      //再次发送请求
+      this.getData();
+    },
+    attrInfo(attr, attrValue) {
+      let props = `${attr.attrId}:${attrValue}:${attr.attrName}`;
+      //数组去重
+      if (this.searchParams.props.indexOf(props) == -1)
+        this.searchParams.props.push(props);
+      this.getData();
+    }
+  },
+  //监听组件实例身上属性的变化
+  watch: {
+    //此处监听路由的信息是否发生变化，如果发生变化则再次发送一次请求
+    $route(newValue, oldValue) {
+      //再次合并发送之前请求的参数
+      Object.assign(this.searchParams, this.$route.query, this.$route.params);
+      //再次发送请求
+      this.getData();
+      //每次请求完毕都应该把相应的三级分类的ID置空
+      this.searchParams.category1Id = "";
+      this.searchParams.category2Id = "";
+      this.searchParams.category3Id = "";
     }
   }
 };
